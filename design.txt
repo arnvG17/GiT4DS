@@ -1,0 +1,30 @@
+github-tracker/
+│
+├── backend/
+│   ├── server.js
+│   ├── .env.example
+│   ├── package.json
+│   ├── models/
+│   │   ├── Team.js
+│   │   └── Submission.js
+│   ├── routes/
+│   │   ├── auth.js
+│   │   ├── team.js
+│   │   └── admin.js
+│   ├── services/
+│   │   └── github.js
+│   └── utils/
+│       └── verifyWebhook.js
+│
+└── frontend/
+    ├── package.json
+    ├── src/
+    │   ├── index.js
+    │   ├── App.js
+    │   ├── pages/
+    │   │   ├── TeamDashboard.js
+    │   │   ├── AdminLogin.js
+    │   │   └── AdminDashboard.js
+    │   ├── components/
+    │   │   └── RepoList.js
+    │   └── api.js

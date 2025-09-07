@@ -1,0 +1,41 @@
+hackathon-app/
+├── backend/
+│   ├── package.json
+│   ├── .env.example
+│   ├── server.js
+│   ├── README.md
+│   ├── config/
+│   │   └── passport.js
+│   ├── models/
+│   │   ├── User.js
+│   │   └── Repo.js
+│   ├── routes/
+│   │   ├── auth.js
+│   │   ├── repo.js
+│   │   └── webhook.js
+│   ├── middleware/
+│   │   ├── auth.js
+│   │   └── rateLimiter.js
+│   └── utils/
+│       └── validators.js
+│
+├── frontend/
+│   ├── package.json
+│   ├── index.html
+│   ├── README.md
+│   ├── src/
+│   │   ├── main.jsx
+│   │   ├── App.jsx
+│   │   ├── index.css
+│   │   ├── components/
+│   │   │   └── FileUploadPreview.jsx
+│   │   └── pages/
+│   │       ├── Login.jsx
+│   │       ├── OAuthCallback.jsx
+│   │       ├── UserDashboard.jsx
+│   │       └── AdminDashboard.jsx
+│   └── .env (optional for Vite: VITE_BACKEND=http://localhost:4000)
+│
+├── README.md               <- root quick-start (setup backend + frontend)
+└── (optional)
+    └── docker-compose.yml  <- (not provided by default; can add on request)
