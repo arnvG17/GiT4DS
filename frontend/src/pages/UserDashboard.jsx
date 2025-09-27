@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 
-const BACKEND = import.meta.env.VITE_BACKEND || "http://localhost:5000";
+const BACKEND = import.meta.env.VITE_BACKEND || "https://git4ds.onrender.com";
 
 export default function UserDashboard() {
   const [userData, setUserData] = useState(null);
