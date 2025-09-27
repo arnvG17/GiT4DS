@@ -95,7 +95,9 @@ router.get("/github/callback", async (req, res) => {
     
 
     const redirect = `${process.env.FRONTEND_ORIGIN}/user`;
+    console.log(redirect);
     res.redirect(redirect);
+
   } catch (err) {
     console.error(err);
     res.redirect(`${process.env.FRONTEND_ORIGIN}/login?error=github`);
