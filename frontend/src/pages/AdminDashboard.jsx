@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 
-const BACKEND = import.meta.env.VITE_BACKEND || "https://localhost:5000/";
+const BACKEND = import.meta.env.VITE_BACKEND || "https://localhost:5000";
 
 export default function AdminDashboard() {
   const [users, setUsers] = useState([]);
