@@ -17,7 +17,7 @@ router.get("/github", (req, res) => {
   
 
 
-  const redirect = `https://github.com/login/oauth/authorize?client_id=${process.env.GITHUB_CLIENT_ID}&scope=repo,user:email&redirect_uri=http://localhost:5000/auth/github/callback`;
+  const redirect = `https://github.com/login/oauth/authorize?client_id=${process.env.GITHUB_CLIENT_ID}&scope=repo,user:email&redirect_uri=https://git4ds.onrender.com/auth/github/callback`;
   res.redirect(redirect); 
 });
 

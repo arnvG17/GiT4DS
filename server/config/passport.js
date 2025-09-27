@@ -19,7 +19,7 @@ passport.use(
     {
       clientID: process.env.GITHUB_CLIENT_ID,
       clientSecret: process.env.GITHUB_CLIENT_SECRET,
-      callbackURL: "http://localhost:5000/auth/github/callback",
+      callbackURL: "https://git4ds.onrender.com/auth/github/callback",
     },
     (accessToken, refreshToken, profile, done) => {
       // Attach token + profile so we can call GitHub API later
@@ -44,7 +44,7 @@ passport.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: "http://localhost:5000/auth/google/callback",
+      callbackURL: "https://git4ds.onrender.com/auth/google/callback",
     },
     (accessToken, refreshToken, profile, done) => {
       const user = {
