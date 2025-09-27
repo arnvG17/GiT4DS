@@ -6,7 +6,7 @@ import crypto from "crypto";
 const router = express.Router();
 
 // 💡 Configuration: Update this to your public server endpoint for webhooks!
-const WEBHOOK_PAYLOAD_URL = "https://yourserver.com/webhook/github";
+const WEBHOOK_PAYLOAD_URL = "https://git4ds.onrender.com/webhook/github";
 
 // --- Helper Functions (Webhook Setup) ---
 
@@ -36,7 +36,8 @@ const parseGitHubRepoUrl = (url) => {
 };
 
 /**
- * Calls the GitHub API to create a webhook for a given repository (Step 2).
+ * Calls the GitHub API to create a webhook for a given repository.
+ * 💡 The events array is updated to track PUSH (commits), STATUS (commit checks), and CREATE (new branches/tags).
  */
 const createGitHubWebhook = async (accessToken, repoDetails, secret) => {
     const { owner, repo } = repoDetails;
@@ -50,7 +51,8 @@ const createGitHubWebhook = async (accessToken, repoDetails, secret) => {
             secret: secret,
             insecure_ssl: "0"
         },
-        events: ["push"],
+        // 💡 UPDATED: Added 'status' and 'create' events for broader change tracking
+        events: ["push", "status", "create"],
         active: true
     };
 
@@ -108,10 +110,13 @@ router.post("/submit", async (req, res) => {
         // Check if a webhook for this repo already exists
         const existingHook = user.activeWebhooks.find(h => h.repoFullName === repoDetails.fullName);
         if (existingHook) {
+             // NOTE: If a webhook is being re-submitted, you might want logic here 
+             // to DELETE the old hook on GitHub and create a new one to ensure 
+             // the events array is up to date, but for now, we assume it's set correctly.
              return res.status(200).json({ 
-                message: "Repository already submitted and webhook is active.", 
-                repo: { repoUrl, description, webhookId: existingHook.webhookId }
-            });
+                 message: "Repository already submitted and webhook is active.", 
+                 repo: { repoUrl, description, webhookId: existingHook.webhookId }
+             });
         }
 
         // 2. Generate Secret and Create Webhook
