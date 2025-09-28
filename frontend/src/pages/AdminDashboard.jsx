@@ -89,7 +89,9 @@ export default function AdminDashboard() {
       // Listen for the server broadcast
       // This event is fired by the server *every time* a commit webhook is received
       socket.on('leaderboard:update', (data) => {
+          console.log("this the data ", data)
           console.log('✅ Real-time Leaderboard Update Received.');
+          console.log( "learderboard data rn",leaderboardData)
           
           // Update the state, which triggers a re-render of the components below
           setLeaderboardData({
