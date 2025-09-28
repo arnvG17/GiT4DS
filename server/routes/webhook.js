@@ -1,68 +1,92 @@
-// server/routes/webhook.js  (or wherever you keep it)
+// routes/webhook.js
 import express from "express";
 import User from "../models/User.js";
 import Commit from "../models/Commit.js";
 
 const router = express.Router();
 
+/**
+ * compute leaderboard snapshot:
+ * - totalCommits
+ * - firstCommitRankings (full commit doc for earliest commit per user)
+ * - latestCommitRankings (full commit doc for latest commit per user)
+ * - recentActivity (latest commits globally)
+ */
 async function calculateAndFetchLeaderboardData() {
-  // Total commits per user (Highest count first)
+  // 1) total commits per user
   const commitCounts = await Commit.aggregate([
     { $group: { _id: "$userId", count: { $sum: 1 } } },
     { $sort: { count: -1 } },
-    { $limit: 20 }
+    { $limit: 200 }
   ]);
 
-  // Earliest commit per user (first commit time) -> sort ascending (earliest first)
-  const firstCommits = await Commit.aggregate([
-    { $group: { _id: "$userId", firstCommitTimestamp: { $min: "$timestamp" } } },
-    { $sort: { firstCommitTimestamp: 1 } } // earliest first
+  // 2) full earliest commit per user:
+  // Sort ascending by timestamp, then group and take first document (the earliest)
+  const firstCommitsAgg = await Commit.aggregate([
+    { $sort: { timestamp: 1, _id: 1 } },
+    { $group: { _id: "$userId", firstCommit: { $first: "$$ROOT" } } },
+    { $limit: 200 }
   ]);
 
-  // Latest commit per user (for "most recent commit" ranking) -> group by max timestamp, sort desc
-  const latestCommits = await Commit.aggregate([
-    { $group: { _id: "$userId", latestCommitTimestamp: { $max: "$timestamp" } } },
-    { $sort: { latestCommitTimestamp: -1 } } // most recent first
+  // 3) full latest commit per user:
+  const latestCommitsAgg = await Commit.aggregate([
+    { $sort: { timestamp: -1, _id: -1 } },
+    { $group: { _id: "$userId", latestCommit: { $first: "$$ROOT" } } },
+    { $limit: 200 }
   ]);
 
-  // Populate user details; aggregation returns {_id: <userId>, ...}
+  // 4) populate user details for each aggregation result
   const usersWithCounts = await User.populate(commitCounts, { path: "_id", select: "username teamName" });
-  const usersWithFirst = await User.populate(firstCommits, { path: "_id", select: "username teamName" });
-  const usersWithLatest = await User.populate(latestCommits, { path: "_id", select: "username teamName" });
+  const usersWithFirst = await User.populate(firstCommitsAgg, { path: "_id", select: "username teamName" });
+  const usersWithLatest = await User.populate(latestCommitsAgg, { path: "_id", select: "username teamName" });
 
-  // Recent activity: full commits (latest first)
+  // 5) recent activity (global latest commits)
   const recentActivity = await Commit.find()
     .sort({ timestamp: -1 })
-    .limit(50)
+    .limit(200)
     .populate("userId", "username teamName")
     .lean();
 
+  // Normalize outputs
   return {
     totalCommits: usersWithCounts.map(u => ({
-      userId: (u._id && u._id._id) ? u._id._id : u._id,
+      userId: u._id && u._id._id ? u._id._id : u._id,
       username: u._id?.username || null,
       teamName: u._id?.teamName || null,
       count: u.count
     })),
 
-    // earliest-first ranking (first commit wins)
     firstCommitRankings: usersWithFirst.map(u => ({
-      userId: (u._id && u._id._id) ? u._id._id : u._id,
+      userId: u._id && u._id._id ? u._id._id : u._id,
       username: u._id?.username || null,
       teamName: u._id?.teamName || null,
-      firstCommitTimestamp: u.firstCommitTimestamp
+      firstCommit: u.firstCommit ? {
+        sha: u.firstCommit.sha,
+        message: u.firstCommit.message,
+        timestamp: u.firstCommit.timestamp,
+        repoFullName: u.firstCommit.repoFullName,
+        authorName: u.firstCommit.authorName,
+        authorEmail: u.firstCommit.authorEmail
+      } : null
     })),
 
-    // latest-first ranking (most recent commit wins)
     latestCommitRankings: usersWithLatest.map(u => ({
-      userId: (u._id && u._id._id) ? u._id._id : u._id,
+      userId: u._id && u._id._id ? u._id._id : u._id,
       username: u._id?.username || null,
       teamName: u._id?.teamName || null,
-      latestCommitTimestamp: u.latestCommitTimestamp
+      latestCommit: u.latestCommit ? {
+        sha: u.latestCommit.sha,
+        message: u.latestCommit.message,
+        timestamp: u.latestCommit.timestamp,
+        repoFullName: u.latestCommit.repoFullName,
+        authorName: u.latestCommit.authorName,
+        authorEmail: u.latestCommit.authorEmail
+      } : null
     })),
 
     recentActivity: recentActivity.map(c => ({
       sha: c.sha,
+      userId: c.userId?._id || null,
       username: c.userId?.username || null,
       teamName: c.userId?.teamName || null,
       repo: c.repoFullName,
@@ -72,19 +96,24 @@ async function calculateAndFetchLeaderboardData() {
   };
 }
 
-// small injector
+// small injector helper to get IO instance if app stored it
 const injectIo = (req, res, next) => {
   req.io = req.app && req.app.get('io') ? req.app.get('io') : (req.io || null);
   next();
 };
 
+/**
+ * POST /github
+ * - quick 202 response to GitHub
+ * - processes payload async (in an IIFE) so GitHub isn't blocked
+ * - robust timestamp extraction & dedupe logic
+ */
 router.post('/github', injectIo, express.json(), async (req, res) => {
-  console.log('Webhook activated (simple mode).');
-
+  console.log('Webhook activated.');
   const event = req.get('X-GitHub-Event') || req.get('x-github-event') || 'unknown';
   if (event === 'ping') return res.status(202).send('Ping received.');
 
-  // respond fast to GitHub
+  // respond immediately
   res.status(202).send(`Accepted ${event}`);
 
   (async () => {
@@ -109,20 +138,21 @@ router.post('/github', injectIo, express.json(), async (req, res) => {
         if (commits.length === 0) {
           console.log(`Push for ${repoFullName} had no commits.`);
         } else {
-          // robust timestamp extraction
+          // Map commits robustly
           const commitDocs = commits.map(c => {
-            // try different places for timestamp: top-level commit timestamp (varies by payload)
+            // prefer timestamp from commit object, fallback to head_commit or now
             const ts = c.timestamp || c.commit?.timestamp || payload.head_commit?.timestamp || null;
+            const sha = c.id || c.sha || c.commit?.id || (c.commit && c.commit.tree && c.commit.tree.sha) || null;
             return {
               userId: user._id,
-              sha: c.id || c.sha || (c.commit && c.commit.id) || null,
-              message: c.message || (c.commit && c.commit.message) || '',
-              timestamp: ts ? new Date(ts) : new Date(), // fallback to now if absent (still better than undefined)
+              sha,
+              message: c.message || c.commit?.message || '',
+              timestamp: ts ? new Date(ts) : new Date(),
               repoFullName,
-              authorName: c.author?.name || c.commit?.author?.name,
-              authorEmail: c.author?.email || c.commit?.author?.email
+              authorName: c.author?.name || c.commit?.author?.name || null,
+              authorEmail: c.author?.email || c.commit?.author?.email || null
             };
-          }).filter(d => d.sha); // ensure sha exists
+          }).filter(d => d.sha); // require sha
 
           // dedupe existing SHAs for that repo
           const shas = commitDocs.map(d => d.sha);
@@ -131,17 +161,19 @@ router.post('/github', injectIo, express.json(), async (req, res) => {
           const filtered = commitDocs.filter(d => !existingSet.has(d.sha));
 
           if (filtered.length > 0) {
+            // insert, allow unordered to survive duplicates
             await Commit.insertMany(filtered, { ordered: false });
             console.log(`Stored ${filtered.length} commits for ${repoFullName}.`);
           } else {
-            console.log('No new commits to store (all shas already present).');
+            console.log('No new commits to store (all SHAs already present).');
           }
         }
       } else {
-        console.log(`Received non-push event '${event}' for ${repoFullName} (ignored for commit insert).`);
+        // ignore non-push events for commit insert
+        console.log(`Received non-push event '${event}' for ${repoFullName}.`);
       }
 
-      // recompute and broadcast
+      // recompute leaderboard and broadcast
       const currentLeaderboard = await calculateAndFetchLeaderboardData();
       const io = req.io || (req.app && req.app.get('io'));
       if (!io) {
@@ -151,12 +183,12 @@ router.post('/github', injectIo, express.json(), async (req, res) => {
         console.log('Broadcasted leaderboard:update via Socket.IO.');
       }
     } catch (err) {
-      console.error('Error processing webhook (simple):', err);
+      console.error('Error processing webhook:', err);
     }
   })();
 });
 
-// GET snapshot
+// GET /admin/leaderboard -> snapshot for clients (preload)
 router.get('/admin/leaderboard', async (req, res) => {
   try {
     const data = await calculateAndFetchLeaderboardData();
