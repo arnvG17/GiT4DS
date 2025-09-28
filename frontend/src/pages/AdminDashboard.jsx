@@ -112,8 +112,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
-      <p>{leaderboardData}</p>
-      <p>{data}</p>
+      
       <header className="mb-8 border-b pb-4">
         <h1 className="text-4xl font-extrabold text-indigo-700">Admin Leaderboard Dashboard</h1>
         <p className={`text-sm font-medium mt-1 ${isConnected ? 'text-green-500' : 'text-red-500'}`}>
@@ -124,7 +123,10 @@ export default function AdminDashboard() {
       {/* --- REAL-TIME LEADERBOARD SECTION (NEW) --- */}
       <section className="bg-white p-6 rounded-xl shadow-lg mb-8">
         <h2 className="text-2xl font-semibold mb-4 text-gray-800">
-            🏆 Real-Time Ranking: First Commit First
+            🏆 Real-Time Ranking: First Commit First    
+<p>{leaderboardData}</p>
+<p>{data}</p>
+
         </h2>
         <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-indigo-200">

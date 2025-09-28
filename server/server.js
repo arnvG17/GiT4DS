@@ -14,6 +14,7 @@ import authRoutes from './routes/auth.js';
 import repoRoutes from './routes/user.js'; // Assuming this is correct, but typically user routes handle repo submission
 import webhookRoutes from './routes/webhook.js';
 import userRoutes from './routes/user.js';
+import adminRoutes from './routes/team.js'
 
 
 
@@ -65,6 +66,7 @@ app.use('/auth', authRoutes);
 app.use('/repo', repoRoutes);
 app.use('/webhook', webhookRoutes); // This route will use the 'io' instance
 app.use('/user', userRoutes);
+app.use('/admin', adminRoutes);
 
 
 app.get('/health', (req, res) => res.json({ ok: true }));
