@@ -112,6 +112,8 @@ export default function AdminDashboard() {
 
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
+      <p>{leaderboardData}</p>
+      <p>{data}</p>
       <header className="mb-8 border-b pb-4">
         <h1 className="text-4xl font-extrabold text-indigo-700">Admin Leaderboard Dashboard</h1>
         <p className={`text-sm font-medium mt-1 ${isConnected ? 'text-green-500' : 'text-red-500'}`}>
