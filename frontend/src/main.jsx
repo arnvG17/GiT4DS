@@ -16,7 +16,7 @@ createRoot(document.getElementById('root')).render(
           <Route index element={<Login />} />
           <Route path="/user" element={<UserDashboard />} />
           <Route path="admin" element={<AdminDashboard />} />
-          <Route path="oauth-callback" element={<AuthCallback />} />
+          
         </Route>
       </Routes>
     </BrowserRouter>
