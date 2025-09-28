@@ -88,6 +88,7 @@ const calculateAndFetchLeaderboardData = async () => {
 router.post("/github", injectIo, express.raw({ type: 'application/json' }), async (req, res) => {
     // Access the actual io object (or the placeholder if not injected)
     const io = req.io;
+    console.log("Webhook activated and " , req)
 
     // 1. Get essential headers and raw payload
     const signature = req.get('X-Hub-Signature-256');
