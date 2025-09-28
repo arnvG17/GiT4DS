@@ -14,7 +14,7 @@ import authRoutes from './routes/auth.js';
 import repoRoutes from './routes/user.js'; // Assuming this is correct, but typically user routes handle repo submission
 import webhookRoutes from './routes/webhook.js';
 import userRoutes from './routes/user.js';
-import adminRoutes from './routes/team.js';
+
 
 
 dotenv.config();
