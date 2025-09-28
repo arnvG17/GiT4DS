@@ -5,8 +5,8 @@ import App from './App';
 import Login from './pages/Login';
 import UserDashboard from './pages/UserDashboard';
 import AdminDashboard from './pages/AdminDashboard';
-import AuthCallback from './pages/AuthCallback';
-import './index.css';
+
+
 
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>
