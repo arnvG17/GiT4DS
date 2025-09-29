@@ -2,6 +2,7 @@ import express from "express";
 import User from "../models/User.js";
 import axios from "axios";
 import crypto from "crypto";
+import { userDataLimiter, userSubmitLimiter } from "../middleware/rateLimiter.js";
 
 const router = express.Router();
 
@@ -75,7 +76,7 @@ const createGitHubWebhook = async (accessToken, repoDetails, secret) => {
 // --- Routes ---
 
 // POST /user/data (Fetch user data)
-router.post("/data", async (req, res) => {
+router.post("/data", userDataLimiter, async (req, res) => {
     try {
         const { teamName } = req.body;
         if (!teamName) return res.status(400).json({ error: "teamName required" });
@@ -91,7 +92,7 @@ router.post("/data", async (req, res) => {
 });
 
 // POST /user/submit (Handles repo submission and webhook creation)
-router.post("/submit", async (req, res) => {
+router.post("/submit", userSubmitLimiter, async (req, res) => {
     try {
         const { teamName, repoUrl, description } = req.body;
         const user = await User.findOne({ teamName });

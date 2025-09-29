@@ -3,6 +3,7 @@ import axios from "axios";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import User from "../models/User.js";
+import { loginLimiter, oauthCallbackLimiter } from "../middleware/rateLimiter.js";
 
 dotenv.config();
 const router = express.Router();
@@ -11,7 +12,7 @@ let teamName = "";
 // ------------------
 // GitHub OAuth
 // ------------------
-router.get("/github", (req, res) => {
+router.get("/github", loginLimiter, (req, res) => {
   teamName = req.query.teamName;
   console.log(teamName);
   
@@ -21,7 +22,7 @@ router.get("/github", (req, res) => {
   res.redirect(redirect); 
 });
 
-router.get("/github/callback", async (req, res) => {
+router.get("/github/callback", oauthCallbackLimiter, async (req, res) => {
   console.log(req.query);
   const code = req.query.code;
   console.log(code);
@@ -107,12 +108,12 @@ router.get("/github/callback", async (req, res) => {
 // ------------------
 // Google OAuth
 // ------------------
-router.get("/google", (req, res) => {
+router.get("/google", loginLimiter, (req, res) => {
   const redirect = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${process.env.GOOGLE_CLIENT_ID}&redirect_uri=${process.env.BACKEND_ORIGIN}/auth/google/callback&response_type=code&scope=openid%20email%20profile&access_type=offline&prompt=consent`;
   res.redirect(redirect);
 });
 
-router.get("/google/callback", async (req, res) => {
+router.get("/google/callback", oauthCallbackLimiter, async (req, res) => {
   const code = req.query.code;
   console.log("google code", code); 
   if (!code) return res.status(400).json({ error: "No code" });

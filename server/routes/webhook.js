@@ -2,6 +2,7 @@
 import express from "express";
 import User from "../models/User.js";
 import Commit from "../models/Commit.js";
+import { webhookLimiter, leaderboardLimiter } from "../middleware/rateLimiter.js";
 
 const router = express.Router();
 
@@ -108,7 +109,7 @@ const injectIo = (req, res, next) => {
  * - processes payload async (in an IIFE) so GitHub isn't blocked
  * - robust timestamp extraction & dedupe logic
  */
-router.post('/github', injectIo, express.json(), async (req, res) => {
+router.post('/github', webhookLimiter, injectIo, express.json(), async (req, res) => {
   console.log('Webhook activated.');
   const event = req.get('X-GitHub-Event') || req.get('x-github-event') || 'unknown';
   if (event === 'ping') return res.status(202).send('Ping received.');
@@ -189,7 +190,7 @@ router.post('/github', injectIo, express.json(), async (req, res) => {
 });
 
 // GET /admin/leaderboard -> snapshot for clients (preload)
-router.get('/admin/leaderboard', async (req, res) => {
+router.get('/admin/leaderboard', leaderboardLimiter, async (req, res) => {
   try {
     const data = await calculateAndFetchLeaderboardData();
     res.json(data);
